@@ -144,6 +144,7 @@ AUTH_USER_MODEL = 'accounts.User'
 
 # STATICFILES_DIRS = (
 #     os.path.join(BASE_DIR, 'static'),
+# heroku doesn't seem to like this
 # )
 
 #filtering set up

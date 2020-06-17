@@ -91,14 +91,10 @@ class ProductVariationSerializer(DynamicFieldsHyperlinkedModelSerializer):
 
  
 
-      
-
-    
 class ProductSerializer(DynamicFieldsHyperlinkedModelSerializer):
     product_variation  = ProductVariationSerializer(many=True,read_only=True,fields=['id','url','product_name','current_price','product_type','available'])
     product_image      = ProductImageSerializer(many=True,fields=['image'],read_only=True)
  
-   
    
 
     name               = serializers.CharField(max_length=200,
@@ -109,7 +105,7 @@ class ProductSerializer(DynamicFieldsHyperlinkedModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['name','id','url','product_image','product_categroy','description','slug','product_variation']
+        fields = ['name','id','url','product_image','product_categroy','category','description','slug','product_variation']
         extra_kwargs = {
                 'slug': {'read_only': True},
         }
@@ -134,10 +130,7 @@ class CategorySerializer(DynamicFieldsHyperlinkedModelSerializer):
         fields=['id','url','name','slug','description','product_set']
 
         
-        extra_kwargs = {
-            'url': {'lookup_field': 'slug'},
-           
-        }     
+          
      
 
 

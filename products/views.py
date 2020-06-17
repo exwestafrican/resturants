@@ -52,12 +52,12 @@ class ProductVariationDetail(generics.RetrieveUpdateDestroyAPIView):
     update or delete product.
     """
     
-    queryset         = ProductVariation.objects.filter(available=True)
-    serializer_class = ProductVariationSerializer
+    queryset          = ProductVariation.objects.filter(available=True)
+    serializer_class  = ProductVariationSerializer
     permission_classes = [IsAdminOrReadOnly]
     
 
-    read_only_fields = ['product']
+    # read_only_fields = ['product']
 
 
     def retrieve(self, request, *args, **kwargs):
@@ -78,8 +78,6 @@ class ProductVariationDetail(generics.RetrieveUpdateDestroyAPIView):
       
 
 class ProductCategoryDetail(generics.RetrieveAPIView):
-    lookup_field     = 'slug'
-    lookup_url_kwarg = 'slug'
     queryset         = Category.objects.all()
     serializer_class = CategorySerializer
 

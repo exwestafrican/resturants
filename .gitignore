@@ -4,7 +4,7 @@ bin/
 include/
 pip-selfcheck.json
 .DS_Store
-
+staticfiles/
 
 #my files
 media_root/
