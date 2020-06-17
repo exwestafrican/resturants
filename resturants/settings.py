@@ -142,10 +142,9 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 AUTH_USER_MODEL = 'accounts.User'
 
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-   
-]
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
 
 #filtering set up
 REST_FRAMEWORK = {
