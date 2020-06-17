@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import status
 from rest_framework import filters
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAdminUser
@@ -33,6 +34,7 @@ class ProductList(generics.ListCreateAPIView):
     filterset_fields  = ['name','category','product_variation__price']
     search_fields     = ['name','product_variation__price','category__id']
     
+   
 
 class ProductDetail(generics.RetrieveUpdateDestroyAPIView):
     """

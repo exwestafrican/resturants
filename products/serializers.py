@@ -94,7 +94,7 @@ class ProductVariationSerializer(DynamicFieldsHyperlinkedModelSerializer):
 class ProductSerializer(DynamicFieldsHyperlinkedModelSerializer):
     product_variation  = ProductVariationSerializer(many=True,read_only=True,fields=['id','url','product_name','current_price','product_type','available'])
     product_image      = ProductImageSerializer(many=True,fields=['image'],read_only=True)
- 
+    category           = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
    
 
     name               = serializers.CharField(max_length=200,
