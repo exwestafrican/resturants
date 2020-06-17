@@ -79,7 +79,7 @@ class ProductVariationDetail(generics.RetrieveUpdateDestroyAPIView):
 
       
 
-class ProductCategoryDetail(generics.RetrieveAPIView):
+class ProductCategoryDetail(generics.RetrieveDestroyAPIView):
     queryset         = Category.objects.all()
     serializer_class = CategorySerializer
 
