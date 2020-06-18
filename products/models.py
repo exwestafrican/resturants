@@ -24,11 +24,15 @@ class ProductManager(models.Manager):
         creates a new product variation instance with default 
         value. 
         """
-        price             = field_name.pop('price') if 'price' in field_name.keys() else 0
+     
+       
         name              = field_name.pop('name')
-        slug              = field_name.pop('slug') if 'slug' in field_name.keys() else slugify(name)  
+        slug              = field_name.pop('slug') if 'slug' in field_name.keys() else slugify(name) 
+        product_type      = field_name.pop('product_type') if 'product_type' in field_name.keys() else 'Basic'
         product           = Product.objects.create(name=name,slug=slug,**field_name)
-        product_variation = ProductVariation.objects.create(product=product,product_type='Basic',price=price)
+      
+        #allow users create variation from here 
+        # product_variation = ProductVariation.objects.create(product=product,product_type=product_type,price=price)
         return product
 
 

@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django_filters',
     'rest_framework',
     'phonenumber_field',
+    'corsheaders',
     #my apps
     'accounts.apps.AccountsConfig',
     'products.apps.ProductsConfig',
@@ -58,6 +59,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -183,5 +185,11 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
+#django-cros-settings
+CORS_ORIGIN_WHITELIST = [
+    "http://localhost:3001",
+    "https://developer.mozilla.org"
+     
+]
 
 django_heroku.settings(locals())

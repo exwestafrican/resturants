@@ -29,11 +29,12 @@ class ProductList(generics.ListCreateAPIView):
     serializer_class        = ProductSerializer
     
     #add filters
-   
-    filter_backends   = [DjangoFilterBackend,filters.SearchFilter]
-    filterset_fields  = ['name','category','product_variation__price']
-    search_fields     = ['name','product_variation__price','category__id']
+    # permission_classes = [IsAdminOrReadOnly]
+    filter_backends    = [DjangoFilterBackend,filters.SearchFilter]
+    filterset_fields   = ['name','category','product_variation__price']
+    search_fields      = ['name','product_variation__price','category__id']
     
+   
    
 
 class ProductDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -47,6 +48,16 @@ class ProductDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminOrReadOnly]
 
 
+
+class ProductVariationCreate(generics.CreateAPIView):
+    """
+    Handles the creation of product variation
+    """  
+    queryset          = ProductVariation.objects.all()
+    serializer_class  = ProductVariationSerializer
+    permission_classes = [IsAdminUser]
+
+
 class ProductVariationDetail(generics.RetrieveUpdateDestroyAPIView):
     """
     returns a single product type or variant
@@ -54,12 +65,12 @@ class ProductVariationDetail(generics.RetrieveUpdateDestroyAPIView):
     update or delete product.
     """
     
-    queryset          = ProductVariation.objects.filter(available=True)
+    queryset          = ProductVariation.objects.all()
     serializer_class  = ProductVariationSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    # permission_classes = [IsAdminOrReadOnly]
     
 
-    # read_only_fields = ['product']
+    read_only_fields = ['product']
 
 
     def retrieve(self, request, *args, **kwargs):
@@ -69,9 +80,7 @@ class ProductVariationDetail(generics.RetrieveUpdateDestroyAPIView):
         class fields argument is added to kwargs
         to take advange of DynamicFieldsHyperlinkedModelSerializer
         """
-        # print(request.session.get_expiry_age())
-        # print(request.session.session_key)
-        # print(209600/60)
+       
         instance = self.get_object()
         read_only_fields = self.read_only_fields
         serializer = self.get_serializer(instance,read_only_fields=read_only_fields)
@@ -85,15 +94,9 @@ class ProductCategoryDetail(generics.RetrieveDestroyAPIView):
 
 
 class ProductCategoryList(generics.ListCreateAPIView):
-    queryset         = Category.objects.all()
-    serializer_class = CategorySerializer
- 
+    queryset           = Category.objects.all()
+    serializer_class   = CategorySerializer
+    permission_classes = [IsAdminOrReadOnly]
 
-class ProductVariationCreate(generics.CreateAPIView):
-    """
-    Handles the creation of product variation
-    """  
-    queryset          = ProductVariation.objects.all()
-    serializer_class  = ProductVariationSerializer
-    permission_classes = [IsAdminUser]
+ 
 

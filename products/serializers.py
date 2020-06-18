@@ -23,6 +23,7 @@ class DynamicFieldsModelSerializer(serializers.ModelSerializer):
     def __init__(self,*args,**kwargs):
         # Don't pass the 'fields' arg up to the superclass
         fields = kwargs.pop('fields', None)
+      
 
         read_only_fields = kwargs.pop('read_only_fields',None)
        
@@ -40,6 +41,7 @@ class DynamicFieldsModelSerializer(serializers.ModelSerializer):
                 self.fields.pop(field_name)
     
         if read_only_fields is not None:
+           
             try:
                 self.Meta.read_only_fields
 
@@ -68,6 +70,7 @@ class ProductImageSerializer(DynamicFieldsHyperlinkedModelSerializer):
 
 
 class ProductVariationSerializer(DynamicFieldsHyperlinkedModelSerializer):
+    # product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
     class Meta:
         model = ProductVariation
         fields = [
@@ -129,7 +132,7 @@ class CategorySerializer(DynamicFieldsHyperlinkedModelSerializer):
         model = Category
         fields=['id','url','name','slug','description','product_set']
 
-        
+        read_only_fields = ['slug']
           
      
 
