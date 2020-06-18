@@ -57,14 +57,7 @@ class Product(models.Model):
     def __str__(self):
         return self.name
         
-    @property
-    def product_image(self):
-        """
-        gets all images associated with
-        instance (product)
-        """
-        return ProductImage.objects.filter(product=self)
-
+    
     @property
     def product_categroy(self):
         return self.category.name
@@ -134,6 +127,15 @@ class ProductVariation(models.Model):
     def product_slug(self):
         """ method present for better naming convention"""
         return self.slug
+
+    @property
+    def product_image(self):
+        """
+        gets all images associated with
+        instance (product)
+        """
+        return ProductImage.objects.filter(product=self)
+        
 
 post_save.connect(product_variation_slug_generator,sender=ProductVariation)
 	

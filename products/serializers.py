@@ -65,17 +65,19 @@ class DynamicFieldsModelSerializer(serializers.ModelSerializer):
 class ProductImageSerializer(DynamicFieldsHyperlinkedModelSerializer):
     class Meta:
         model = ProductImage
-        fields=['id','image','product']
+        fields=['id','url','image','product']
        
 
 
 class ProductVariationSerializer(DynamicFieldsHyperlinkedModelSerializer):
     # product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+    product_image      = ProductImageSerializer(many=True,fields=['url'],read_only=True)
     class Meta:
         model = ProductVariation
         fields = [
             'id','url',
             'product','product_name',
+            'product_image',
             'product_type','price',
             'product_slug', 'sale_price',
             'current_price','description',
@@ -95,8 +97,10 @@ class ProductVariationSerializer(DynamicFieldsHyperlinkedModelSerializer):
  
 
 class ProductSerializer(DynamicFieldsHyperlinkedModelSerializer):
-    product_variation  = ProductVariationSerializer(many=True,read_only=True,fields=['id','url','product_name','current_price','product_type','available'])
-    product_image      = ProductImageSerializer(many=True,fields=['image'],read_only=True)
+    product_variation  = ProductVariationSerializer(many=True,read_only=True,
+                        fields=['id','url','product_name','product_image','current_price',
+                                'product_type','available'])
+   
     category           = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
    
 
@@ -108,7 +112,7 @@ class ProductSerializer(DynamicFieldsHyperlinkedModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['name','id','url','product_image','product_categroy','category','description','slug','product_variation']
+        fields = ['name','id','url','product_categroy','category','description','slug','product_variation']
         extra_kwargs = {
                 'slug': {'read_only': True},
         }
