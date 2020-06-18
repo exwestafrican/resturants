@@ -98,8 +98,8 @@ class ProductVariationSerializer(DynamicFieldsHyperlinkedModelSerializer):
 
 class ProductSerializer(DynamicFieldsHyperlinkedModelSerializer):
     product_variation  = ProductVariationSerializer(many=True,read_only=True,
-                        fields=['id','url','product_name','product_image','current_price',
-                                'product_type','available'])
+                        fields=['id','url','product_name','product_image',
+                                 'current_price','description','product_type','available'])
    
     category           = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
    
@@ -146,44 +146,3 @@ class CategorySerializer(DynamicFieldsHyperlinkedModelSerializer):
 
 
 
-
-
-
-# class CustomerHyperlink(serializers.HyperlinkedRelatedField):
-#     # We define these as class attributes, so we don't need to pass them as arguments.
-#     view_name = 'productvariation-detail'
-#     queryset = ProductVariation.objects.all()
-
-
-#     def get_url(self, obj, view_name, request, format):
-       
-#         print('here')
-#         url_kwargs = {
-#             'product_name': obj.product_name,
-#             'product_type': obj.product_type
-#         }
-#         return reverse(view_name, kwargs=url_kwargs, request=request, format=format)
-
-
-    # def update(self, instance, validated_data):
-    #     """
-    #     handles updating of a product varitation when
-    #     put or patch is called on a product without
-    #     changing the product type.
-    #     if product type is changed, a new product
-    #     vatiation is created. 
-    #     """
-
-    #     if instance.product_type == validated_data.get('product_type'):
-    #         return super().update(instance, validated_data)
-       
-      
-    #     validated_data['product']= instance.product
-    #     product_variation = self.create(validated_data)
-    #     return product_variation
-
-    # def create(self,validated_data):
-    #     """
-    #     creates a new product variation instance.
-    #     """
-    #     return ProductVariation.objects.create(**validated_data)
