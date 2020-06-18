@@ -78,12 +78,12 @@ class ProductImage(models.Model):
     """
     Assigns images to a product 
     """
-    product             = models.ForeignKey('Product',on_delete=models.CASCADE)
+    product             = models.ForeignKey('ProductVariation',on_delete=models.CASCADE)
     image               = models.ImageField(upload_to=image_path,unique=True,null=True,blank=True)  #adds an extra layer of security
     
    
     def __str__(self):
-        return self.product.slug
+        return str(self.product)
 
 class ProductVariationQuerySet(models.query.QuerySet):
 	def active(self):
