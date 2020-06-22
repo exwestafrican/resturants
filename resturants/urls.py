@@ -25,6 +25,7 @@ from accounts.views import MyTokenObtainPairView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api-auth/', include('rest_framework.urls')),
     path('api/accounts/',include('accounts.urls')),
     path('api/product/',include('products.urls')),
     path('api/token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),

@@ -2,6 +2,8 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.signals import post_save
 from django.utils import timezone
+from django.shortcuts import reverse
+    
 
 
 from products.utils import image_path,slug_generator,product_variation_slug_generator
@@ -78,6 +80,8 @@ class ProductImage(models.Model):
     def __str__(self):
         return str(self.product)
 
+
+
 class ProductVariationQuerySet(models.query.QuerySet):
 	def active(self):
 		return self.filter(available=True)
@@ -95,7 +99,7 @@ class ProductVariation(models.Model):
     product_type        = models.CharField(
                             _('type'),
                             max_length=200,
-                            default='Basic',
+                            blank=True,
                             help_text='this could be a different colour, size,or more things out of the box')
     description         = models.TextField(blank=True, null=True)
     price               = models.DecimalField(decimal_places=2,max_digits=7)
@@ -120,13 +124,27 @@ class ProductVariation(models.Model):
 
     @property
     def current_price(self):
-        if self.sale_price is not None:return self.sale_price
-        return self.price
+        """
+        decides current price of product
+        picks sales price if available,
+        else displays actual product price.
+        """
+        current_price = self.sale_price if self.sale_price is not None else self.price
+        return current_price
     
     @property
     def product_slug(self):
-        """ method present for better naming convention"""
+        """ 
+        method present for better naming convention
+        """
         return self.slug
+
+    def slugify_product_name(self):
+        """
+        returns the slug representation 
+        of product name. 
+        """
+        return slugify(self.product_name)
 
     @property
     def product_image(self):
@@ -135,10 +153,105 @@ class ProductVariation(models.Model):
         instance (product)
         """
         return ProductImage.objects.filter(product=self)
-        
+
+
+    def get_absolute_url(self):
+        """
+        returns an absolute url path to product
+        """
+        kwargs={
+                'product_name':slugify(self.slugify_product_name()),
+                 'pk' :self.pk
+                }
+        return reverse('productvariation-detail', kwargs=kwargs)
+
+    
 
 post_save.connect(product_variation_slug_generator,sender=ProductVariation)
+
+
+class PackageQuerySet(models.query.QuerySet):
+	def active(self):
+		return self.filter(available=True)
+
+class PackageManager(models.Manager):
+    def get_queryset(self):
+        return ProductQuerySet(self.model, using=self._db)
+    
+
+class Package(models.Model):
+    """
+    this model 
+    create a new package
+    and gives specific details related to package
+    """
+    name        = models.CharField(max_length=200,unique=True)
+    price       = models.DecimalField(decimal_places=2,max_digits=7)
+    description = models.TextField(blank=True, null=True)
+    slug        = models.SlugField(unique=True,blank=True) 
+    sale_price  = models.DecimalField(decimal_places=2, max_digits=7, null=True, blank=True)
+    available   = models.BooleanField(default=True)
+    created     = models.DateTimeField(auto_now_add=True)
+    objects     = PackageManager()
+
+    #add package content as inline admin
+
+    def __str__(self):
+        return str(self.name)
+        
+    @property
+    def current_price(self):
+        """
+        decides current price of product
+        picks sales price if available,
+        else displays actual product price.
+        """
+        current_price = self.sale_price if self.sale_price is not None else self.price
+        return current_price
+
+    def get_absolute_url(self):
+        """
+        returns an absolute url path to product
+        """
+        
+        return reverse('package-detail', kwargs={'slug' :self.slug})
+
+post_save.connect(slug_generator,sender=Package)
+
+class PackageContent(models.Model):
+    """
+    this adds products to package
+    """
+    package     = models.ForeignKey('Package',related_name='package_content', on_delete=models.CASCADE)
+    product     = models.ForeignKey('Product',on_delete=models.CASCADE)
+    quantity    = models.PositiveIntegerField()
 	
+    def __str__(self):
+        return str(self.package)
+
+    @property
+    def product_name(self):
+        """
+        returns name of product in package. 
+        """
+        return str(self.product.name)
+
+  
+    class Meta:
+        verbose_name = _('Package Content')
+        verbose_name_plural = _('Package Content')
+        constraints = [
+                models.UniqueConstraint(fields=['package', 'product'], name='unique_packaged_product')
+        ]
+        #unique together, package and product
+
+    def get_absolute_url(self):
+        """
+        returns an absolute url path to package content
+        """
+        return reverse('package-content-detail', kwargs={'pk' :self.pk})
+    
+   
 
 class Category(models.Model):
     name            = models.CharField(max_length=200,unique=True)

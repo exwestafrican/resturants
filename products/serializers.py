@@ -5,60 +5,13 @@ from rest_framework.validators import UniqueTogetherValidator,UniqueValidator
 
 from django.utils.text import slugify
 
-from products.models import (Product,
-                            ProductVariation,
-                            ProductImage,
+from products.models import (Product,ProductVariation,ProductImage,
+                            Package,PackageContent,
                             Category)
 
 
-from accounts.serializers import DynamicFieldsHyperlinkedModelSerializer
-
-
-class DynamicFieldsModelSerializer(serializers.ModelSerializer):
-    """
-    A ModelSerializer that takes an additional `fields`and 'read_only_fields argument that
-    controls which fields should be displayed and when some fields should be set as read_only
-    """
-
-    def __init__(self,*args,**kwargs):
-        # Don't pass the 'fields' arg up to the superclass
-        fields = kwargs.pop('fields', None)
-      
-
-        read_only_fields = kwargs.pop('read_only_fields',None)
-       
-        # Instantiate the superclass normally
-        super(DynamicFieldsModelSerializer, self).__init__(*args, **kwargs)
-       
-       
-        if fields is not None:
-            
-            allowed     = set(fields)
-            exisiting   = set(self.fields)
-            
-            for field_name in exisiting-allowed:
-                #remove items from dict like obj
-                self.fields.pop(field_name)
-    
-        if read_only_fields is not None:
-           
-            try:
-                self.Meta.read_only_fields
-
-            except AttributeError:
-                raise AttributeError (f"{self.__class__.__name__} does not have an "
-                        "attribute read_only_fields, create an empty list in Meta class to resolve this "
-                        "Class Meta: read_only_fields=[ ]")
-
-            else:
-                #using a set to prevent repetition of fields appended to 
-                # read_only_frields due to user refreshing page
-                model_read_only_fields = set()
-                
-                for field in read_only_fields:
-                    model_read_only_fields.add(field)
-              
-                self.Meta.read_only_fields = list(model_read_only_fields)
+from accounts.custom_serializers import (DynamicFieldsHyperlinkedModelSerializer,
+                                         DynamicFieldsModelSerializer)
 
 
 
@@ -68,37 +21,44 @@ class ProductImageSerializer(DynamicFieldsHyperlinkedModelSerializer):
         fields=['id','url','image','product']
        
 
-
-class ProductVariationSerializer(DynamicFieldsHyperlinkedModelSerializer):
-    # product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+class ProductVariationSerializer(DynamicFieldsModelSerializer):
     product_image      = ProductImageSerializer(many=True,fields=['url'],read_only=True)
+    url                = serializers.SerializerMethodField()
+   
+
     class Meta:
-        model = ProductVariation
-        fields = [
-            'id','url',
-            'product','product_name',
-            'product_image',
-            'product_type','price',
-            'product_slug', 'sale_price',
-            'current_price','description',
-            'available','quantity_available']
-           
+        model  = ProductVariation
+        fields = [  'id','url','product_name',
+                    'product_image','product_type','price',
+                    'product_slug', 'sale_price','current_price',
+                    'description','available','quantity_available']
+                
         validators = [
             UniqueTogetherValidator(
                 queryset=ProductVariation.objects.all(),
                 fields=['product', 'product_type']
             )
         ]
+       
 
         read_only_fields = []
 
-    
 
- 
+    def get_url(self,obj):
+        """
+        takes the absolute url of a view, 
+        and appends a full path to it
+        absolute_url = product/<int:pk>
+        full path = https://<domain_name>/<absolute_url>
+        """
+        return self.context['request'].build_absolute_uri(obj.get_absolute_url())
+           
+
+    
 
 class ProductSerializer(DynamicFieldsHyperlinkedModelSerializer):
     product_variation  = ProductVariationSerializer(many=True,read_only=True,
-                        fields=['id','url','product_name','product_image',
+                        fields=['id','url','product_image',
                                  'current_price','description','product_type','available'])
    
     category           = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
@@ -115,6 +75,7 @@ class ProductSerializer(DynamicFieldsHyperlinkedModelSerializer):
         fields = ['name','id','url','product_categroy','category','description','slug','product_variation']
         extra_kwargs = {
                 'slug': {'read_only': True},
+               
         }
 
 
@@ -139,7 +100,40 @@ class CategorySerializer(DynamicFieldsHyperlinkedModelSerializer):
         read_only_fields = ['slug']
           
      
+class PackageContentSerializer(DynamicFieldsModelSerializer):
+    url = serializers.SerializerMethodField()
+    class Meta:
+        model = PackageContent
+        fields = ['package','url','product','product_name','quantity']
 
+        validators = [
+            UniqueTogetherValidator(
+                queryset=PackageContent.objects.all(),
+                fields=['package', 'product'],
+                message = "this product already exists in package, you can update it's qty on a different view or change the product"
+            )
+        ]
+
+    def get_url(self,obj):
+        """
+        takes the absolute url of a view, 
+        and appends a full path to it
+        """
+        return self.context['request'].build_absolute_uri(obj.get_absolute_url())
+
+
+class PackageSerializer(DynamicFieldsModelSerializer):
+    package_content = PackageContentSerializer(many=True,read_only=True,fields=['product_name','quantity','url'])
+    url            = serializers.SerializerMethodField()
+    class Meta:
+        model = Package
+        fields  = ['id','name','url','available','package_content','price','sale_price','current_price','available','slug']
+        read_only_fields = ['slug']
+
+    def get_url(self,obj):
+        return self.context['request'].build_absolute_uri(obj.get_absolute_url())
+
+   
 
 
 

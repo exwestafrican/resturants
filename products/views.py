@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework import filters
 from rest_framework.authentication import SessionAuthentication
@@ -7,10 +8,10 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework import generics
 from rest_framework.response import Response
 
-from products.models import  ProductVariation,Product,Category
+from products.models import  ProductVariation,Product,Category,PackageContent,Package
 from products.serializers import (
-                            ProductVariationSerializer,
-                            ProductSerializer,
+                            ProductVariationSerializer,ProductSerializer,
+                            PackageSerializer,PackageContentSerializer,
                             CategorySerializer)
 
 
@@ -43,8 +44,8 @@ class ProductDetail(generics.RetrieveUpdateDestroyAPIView):
     details atributed to it.
     i.e name: smoothie. variation: small,large, premium
     """
-    queryset          = Product.objects.all()
-    serializer_class  = ProductSerializer
+    queryset           = Product.objects.all()
+    serializer_class   = ProductSerializer
     permission_classes = [IsAdminOrReadOnly]
 
 
@@ -64,13 +65,11 @@ class ProductVariationDetail(generics.RetrieveUpdateDestroyAPIView):
     i.e Basic smoothie. View also allows admin or staff 
     update or delete product.
     """
-    
-    queryset          = ProductVariation.objects.all()
-    serializer_class  = ProductVariationSerializer
-    # permission_classes = [IsAdminOrReadOnly]
-    
-
-    read_only_fields = ['product']
+  
+    queryset           = ProductVariation.objects.all()
+    serializer_class   = ProductVariationSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    read_only_fields   = ['product']
 
 
     def retrieve(self, request, *args, **kwargs):
@@ -100,3 +99,41 @@ class ProductCategoryList(generics.ListCreateAPIView):
 
  
 
+class PackageList(generics.ListCreateAPIView):
+    """
+    allows admin users create a new package,
+    list out avaialble package to any user.
+    """
+    queryset           = Package.objects.all()
+    serializer_class   = PackageSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+class PackageDetail(generics.RetrieveUpdateDestroyAPIView):
+    """
+    allows admin users edit detail of a specif package,
+    and any user see detail of a specif package
+    """
+    lookup_field       = 'slug'
+    queryset           = Package.objects.all()
+    serializer_class   = PackageSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+
+
+class CreatePackageContent(generics.CreateAPIView):
+    """
+    allows admin users create a package
+    """
+    queryset            = PackageContent.objects.all()
+    serializer_class    = PackageContentSerializer
+
+
+class PackageContentDetail(generics.RetrieveUpdateDestroyAPIView):
+    """
+    provides explicit details about a package content
+    allows admin users,edit and delete content
+
+    """
+    queryset            = PackageContent.objects.all()
+    serializer_class    = PackageContentSerializer
+    permission_classes  = [IsAdminOrReadOnly]
