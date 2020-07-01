@@ -11,4 +11,5 @@ from products.models import ProductVariation
 cart = Cart.objects.first()
 user = get_user_model().objects.first()
 product = ProductVariation.objects.first()
-cart_item = CartItem.objects.create_cart_item(cart=cart,product=product,quantity=25,owner=user)
+cart = Cart.objects.create(total=350,owner=user)
+cart.cart_id

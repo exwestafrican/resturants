@@ -11,6 +11,7 @@ from django.utils.text import slugify
 # Create your models here.
 
 
+
 class ProductQuerySet(models.query.QuerySet):
 	def active(self):
 		return self.filter(active=True)
@@ -30,7 +31,7 @@ class ProductManager(models.Manager):
        
         name              = field_name.pop('name')
         slug              = field_name.pop('slug') if 'slug' in field_name.keys() else slugify(name) 
-        product_type      = field_name.pop('product_type') if 'product_type' in field_name.keys() else 'Basic'
+        product_type      = field_name.pop('product_type') if 'product_type' in field_name.keys() else 'regular'
         product           = Product.objects.create(name=name,slug=slug,**field_name)
       
         #allow users create variation from here 
@@ -41,7 +42,8 @@ class ProductManager(models.Manager):
 
 class Product(models.Model):
     """
-    Descripes everything about a product 
+    Descripes everything 
+    about a product 
     """
     name                = models.CharField(max_length=200,unique=True)
     description         = models.TextField(blank=True, null=True)
@@ -74,7 +76,7 @@ class ProductImage(models.Model):
     Assigns images to a product 
     """
     product             = models.ForeignKey('ProductVariation',on_delete=models.CASCADE)
-    image               = models.ImageField(upload_to=image_path,unique=True,null=True,blank=True)  #adds an extra layer of security
+    image               = models.ImageField(upload_to=image_path,unique=True,null=True,blank=True)  #adds an extra layer of certaintiy
     
    
     def __str__(self):
@@ -90,10 +92,11 @@ class ProductVariationManager(models.Manager):
     def get_queryset(self):
         return ProductQuerySet(self.model, using=self._db)
 
+
 class ProductVariation(models.Model):
     """
-    Stores single products as well as variations
-    variations attributed to a single product
+    Stores single products as well as variations. 
+    Variations attributed to a single product
     """
     product             = models.ForeignKey('Product',related_name='product_variation',on_delete=models.CASCADE,null=True)
     product_type        = models.CharField(
@@ -116,17 +119,21 @@ class ProductVariation(models.Model):
         unique_together = ['product', 'product_type']
 
     def __str__(self):
-        return str(self.slug)
+        #formarly self.slug
+        return f'{self.product_name} ({self.type_of_product})'
 
     @property
     def product_name(self):
         return str(self.product.name)
 
     @property
+    def type_of_product(self):
+        return str(self.product_type)
+
+    @property
     def current_price(self):
         """
-        decides current price of product
-        picks sales price if available,
+        decides current price of product picks sales price if available,
         else displays actual product price.
         """
         current_price = self.sale_price if self.sale_price is not None else self.price
@@ -135,22 +142,20 @@ class ProductVariation(models.Model):
     @property
     def product_slug(self):
         """ 
-        method present for better naming convention
+        method present for better naming convention.
         """
         return self.slug
 
     def slugify_product_name(self):
         """
-        returns the slug representation 
-        of product name. 
+        returns the slug representation of product name. 
         """
         return slugify(self.product_name)
 
     @property
     def product_image(self):
         """
-        gets all images associated with
-        instance (product)
+        gets all images associated with instance (product)
         """
         return ProductImage.objects.filter(product=self)
 
@@ -165,9 +170,89 @@ class ProductVariation(models.Model):
                 }
         return reverse('productvariation-detail', kwargs=kwargs)
 
+post_save.connect(product_variation_slug_generator,sender=ProductVariation)
+
+
+class Category(models.Model):
+    name            = models.CharField(max_length=200,unique=True)
+    slug            = models.SlugField(unique=True,null=True,blank=True)
+    description     = models.TextField(null=True,blank=True)
+    created         = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Category')
+        verbose_name_plural = _('Categories')
+
+
+    def __str__(self):
+        return self.name
+
     
 
-post_save.connect(product_variation_slug_generator,sender=ProductVariation)
+post_save.connect(slug_generator,sender=Category)
+
+
+class AddonItem(models.Model):
+    """
+
+    """
+    name                  = models.CharField(max_length=200,unique=True)
+    quantity_available    = models.PositiveIntegerField(default=1)
+    available             = models.BooleanField(default=True)
+    created               = models.DateTimeField(default=timezone.localtime(),blank=True)
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse('product-addons-detail', kwargs={'name':slugify(self.name)})
+
+class ProductAddon(models.Model):
+    """
+    this adds products to package
+    """
+    add_on_item          = models.ForeignKey('AddonItem',on_delete=models.CASCADE,null=True)
+    product_type         = models.ForeignKey('ProductVariation',related_name='content', on_delete=models.CASCADE)
+    quantity             = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        verbose_name = _('Addon')
+        verbose_name_plural = _('Addons')
+        constraints = [
+                models.UniqueConstraint(fields=['product_type', 'add_on_item'], name='unique_combination')
+        ]
+
+    @property
+    def add_on_item_name(self):
+        return self.add_on_item.name  
+
+    @property
+    def type_of_product(self):
+        return self.product_type.type_of_product
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class PackageQuerySet(models.query.QuerySet):
@@ -218,13 +303,16 @@ class Package(models.Model):
 
 post_save.connect(slug_generator,sender=Package)
 
+
+#create product variation addon 
 class PackageContent(models.Model):
     """
     this adds products to package
     """
-    package     = models.ForeignKey('Package',related_name='package_content', on_delete=models.CASCADE)
-    product     = models.ForeignKey('Product',on_delete=models.CASCADE)
-    quantity    = models.PositiveIntegerField()
+    package         = models.ForeignKey('Package',related_name='package_content', on_delete=models.CASCADE)
+    product         = models.ForeignKey('Product',on_delete=models.CASCADE)
+    # product_type    = models.ForeignKey('ProductVariation',on_delete=models.CASCADE) #new
+    quantity        = models.PositiveIntegerField()
 	
     def __str__(self):
         return str(self.package)
@@ -252,21 +340,3 @@ class PackageContent(models.Model):
         return reverse('package-content-detail', kwargs={'pk' :self.pk})
     
    
-
-class Category(models.Model):
-    name            = models.CharField(max_length=200,unique=True)
-    slug            = models.SlugField(unique=True,null=True,blank=True)
-    description     = models.TextField(null=True,blank=True)
-    created         = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = _('Category')
-        verbose_name_plural = _('Categories')
-
-
-    def __str__(self):
-        return self.name
-
-    
-
-post_save.connect(slug_generator,sender=Category)

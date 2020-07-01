@@ -1,15 +1,16 @@
 from django import forms 
 
-from products.models import PackageContent,ProductVariation
-
+from products.models import ProductVariation,ProductAddon
+# PackageContent,
 
 class ProductVariationForm(forms.ModelForm):
     class Meta:
         model = ProductVariation
         fields = ['product_type','price','available','quantity_available']
 
-class PackageContentForm(forms.ModelForm):
+
+class ProductAddonForm(forms.ModelForm):
 
     class Meta:
-        model = PackageContent
-        fields = ['package','product','quantity']
+        model = ProductAddon
+        fields = ['add_on_item','product_type','quantity']

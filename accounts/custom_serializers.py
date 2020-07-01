@@ -94,3 +94,14 @@ class DynamicFieldsModelSerializer(serializers.ModelSerializer):
               
                 self.Meta.read_only_fields = list(model_read_only_fields)
              
+        
+
+
+    def get_url(self,obj):
+            """
+            takes the absolute url of a view, 
+            and appends a full path to it
+            absolute_url = product/<int:pk>
+            full path = https://<domain_name>/<absolute_url>
+            """
+            return self.context['request'].build_absolute_uri(obj.get_absolute_url())    

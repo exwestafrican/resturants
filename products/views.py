@@ -7,11 +7,14 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAdminUser
 from rest_framework import generics
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.settings import api_settings
 
-from products.models import  ProductVariation,Product,Category,PackageContent,Package
+from products.models import  ProductVariation,Product,Category,AddonItem
+# ,PackageContent,Package
 from products.serializers import (
-                            ProductVariationSerializer,ProductSerializer,
-                            PackageSerializer,PackageContentSerializer,
+                            ProductVariationSerializer,ProductSerializer,AddonItemSerializer,
+                            # PackageSerializer,PackageContentSerializer,
                             CategorySerializer)
 
 
@@ -19,23 +22,75 @@ from products.permissions import IsAdminOrReadOnly
 # Create your views here.
 
 
-class ProductList(generics.ListCreateAPIView):
+class ProductList(APIView):
     
     """
     returns a list of products, variation and necessary
     details atributed to it.
     i.e name :smoothie. variation: small,large, premium
+    enables creation of both product and product variation
+    by admin user
     """
     queryset                = Product.objects.all()
     serializer_class        = ProductSerializer
     
     #add filters
-    # permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
     filter_backends    = [DjangoFilterBackend,filters.SearchFilter]
     filterset_fields   = ['name','category','product_variation__price']
     search_fields      = ['name','product_variation__price','category__id']
+
+
+    def get(self,request,format=None):
+        self.request.session.set_test_cookie() 
+        #set sessionId so user can add item to cart. 
+        # check if it worked when user tries to add item to cart
+        products = Product.objects.all()
+        serializer = ProductSerializer(products,many=True,context={'request': request})
+        return Response(serializer.data)
+
+    def post(self,request,format=None):
+        """
+        handles creation of product + one variation
+        creates a diction for variation parameter
+        """
+        variation_creation_data={
+            #data needed to create a product variation
+            'product_type':request.data.get('product_type'),
+            'price': request.data.get('price'),
+            'available':request.data.get('available'),
+            'quantity_available':request.data.get('quantity_available')
+        }
+
+        #validation stage ignores unnecessary data in request.data
+        product_serializer    = ProductSerializer(data=request.data,context={'request': request})
+        
+
+        if product_serializer.is_valid():
+                #handle product stuff 
+                product_serializer.save()
+                variation_creation_data['product']= product_serializer.data.get('id')
+                headers = self.get_success_headers(product_serializer.data)     
+        else:
+            return Response(product_serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        #if user doesn't specify a product type, create just a product.
+        if variation_creation_data['product_type']== None: return Response(product_serializer.data,status=status.HTTP_200_OK,headers=headers)
+
+        variation_serializer  = ProductVariationSerializer(data=variation_creation_data,context={'request': request})
+
+        if variation_serializer.is_valid():
+            variation_serializer.save()
+        else:
+            return Response(variation_serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(variation_serializer.data,status=status.HTTP_200_OK,headers=headers)
+ 
     
-   
+    def get_success_headers(self, data):
+            try:
+                return {'Location': str(data[api_settings.URL_FIELD_NAME])}
+            except (TypeError, KeyError):
+                return {}   
    
 
 class ProductDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -56,7 +111,9 @@ class ProductVariationCreate(generics.CreateAPIView):
     """  
     queryset          = ProductVariation.objects.all()
     serializer_class  = ProductVariationSerializer
-    permission_classes = [IsAdminUser]
+    #permission_classes = [IsAdminUser]
+
+    #allow user add an addon to this?
 
 
 class ProductVariationDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -99,41 +156,77 @@ class ProductCategoryList(generics.ListCreateAPIView):
 
  
 
-class PackageList(generics.ListCreateAPIView):
-    """
-    allows admin users create a new package,
-    list out avaialble package to any user.
-    """
-    queryset           = Package.objects.all()
-    serializer_class   = PackageSerializer
-    permission_classes = [IsAdminOrReadOnly]
-
-class PackageDetail(generics.RetrieveUpdateDestroyAPIView):
-    """
-    allows admin users edit detail of a specif package,
-    and any user see detail of a specif package
-    """
-    lookup_field       = 'slug'
-    queryset           = Package.objects.all()
-    serializer_class   = PackageSerializer
-    permission_classes = [IsAdminOrReadOnly]
 
 
 
-class CreatePackageContent(generics.CreateAPIView):
-    """
-    allows admin users create a package
-    """
-    queryset            = PackageContent.objects.all()
-    serializer_class    = PackageContentSerializer
+#add creating food item-see all food items 
+
+class AddonItemList(generics.ListCreateAPIView):
+    queryset           = AddonItem.objects.all()
+    serializer_class   = AddonItemSerializer
 
 
-class PackageContentDetail(generics.RetrieveUpdateDestroyAPIView):
-    """
-    provides explicit details about a package content
-    allows admin users,edit and delete content
 
-    """
-    queryset            = PackageContent.objects.all()
-    serializer_class    = PackageContentSerializer
-    permission_classes  = [IsAdminOrReadOnly]
+class AddonItemDetail(generics.RetrieveUpdateDestroyAPIView):
+    lookup_field       = 'name'
+    queryset           = AddonItem.objects.all()
+    serializer_class   = AddonItemSerializer
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# class PackageList(generics.ListCreateAPIView):
+#     """
+#     allows admin users create a new package,
+#     list out avaialble package to any user.
+#     """
+#     queryset           = Package.objects.all()
+#     serializer_class   = PackageSerializer
+#     permission_classes = [IsAdminOrReadOnly]
+
+# class PackageDetail(generics.RetrieveUpdateDestroyAPIView):
+#     """
+#     allows admin users edit detail of a specif package,
+#     and any user see detail of a specif package
+#     """
+#     lookup_field       = 'slug'
+#     queryset           = Package.objects.all()
+#     serializer_class   = PackageSerializer
+#     permission_classes = [IsAdminOrReadOnly]
+
+
+
+
+
+# class CreatePackageContent(generics.CreateAPIView):
+#     """
+#     allows admin users create a package
+#     """
+#     queryset            = PackageContent.objects.all()
+#     serializer_class    = PackageContentSerializer
+
+
+# class PackageContentDetail(generics.RetrieveUpdateDestroyAPIView):
+#     """
+#     provides explicit details about a package content
+#     allows admin users,edit and delete content
+
+#     """
+#     queryset            = PackageContent.objects.all()
+#     serializer_class    = PackageContentSerializer
+#     permission_classes  = [IsAdminOrReadOnly]

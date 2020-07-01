@@ -1,6 +1,6 @@
 from django.forms import ModelForm
 
-from cart.models import CartItem
+from cart.models import CartItem,Cart
 
 
 class CartItemForm(ModelForm):
@@ -10,5 +10,14 @@ class CartItemForm(ModelForm):
     """
     class Meta:
         model = CartItem
-        fields = ['cart','product','quantity','owner','amount']
+        fields = ['cart','product','quantity']
+
+
+
+
+
+
+  
+
+
         

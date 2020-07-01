@@ -17,7 +17,6 @@ def make_filename(filename):
     return new_filename
 
 
-
 def image_path(instance,filename):
     """ creates a new file path and verifies uniqueness"""
     klass = instance.__class__
@@ -61,4 +60,6 @@ def product_variation_slug_generator(sender,instance,created,*args,**kwargs):
     if created or slug != instance.slug:
         instance.slug = slug
         instance.save()
+
+
 
