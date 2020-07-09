@@ -26,11 +26,11 @@ class User(AbstractBaseUser,PermissionsMixin):
     phone_number  =  PhoneNumberField(
                         unique=True,
                         help_text='phone numbers need to come with extentions, e.g +23481690....',
-                        blank=True)
+                        blank=True,null=True)
 
     email         = models.EmailField(unique=True, max_length=200)
-    first_name    = models.CharField(max_length=30, blank=True)
-    last_name     = models.CharField(max_length=30, blank=True)
+    first_name    = models.CharField(max_length=30, blank=True,null=True)
+    last_name     = models.CharField(max_length=30, blank=True, null=True)
     date_joined   = models.DateTimeField(auto_now_add=True)
     is_staff      = models.BooleanField(
                        'staff status',
@@ -47,7 +47,7 @@ class User(AbstractBaseUser,PermissionsMixin):
 
     USERNAME_FIELD = 'email'
     EMAIL_FIELD = 'email'
-    # REQUIRED_FIELDS = ['email']
+    REQUIRED_FIELDS = ['phone_number']
 
     objects = UserManager()
 
@@ -58,6 +58,8 @@ class User(AbstractBaseUser,PermissionsMixin):
     def clean(self):
         super().clean()
         self.email = self.__class__.objects.normalize_email(self.email)
+
+    
 
     def get_full_name(self):
         """
