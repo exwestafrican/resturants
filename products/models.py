@@ -127,6 +127,10 @@ class ProductVariation(models.Model):
         return str(self.product.name)
 
     @property
+    def product_variation_name(self):
+        return f'{self.product_name} ({self.type_of_product})'
+
+    @property
     def type_of_product(self):
         return str(self.product_type)
 
