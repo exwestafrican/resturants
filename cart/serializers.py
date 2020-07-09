@@ -5,38 +5,46 @@ from accounts.custom_serializers import DynamicFieldsModelSerializer
 from cart.models import CartItem,Cart
 from products.models import ProductVariation
 class CartItemSerializer(DynamicFieldsModelSerializer):
-    # product               = serializers.PrimaryKeyRelatedField(max_length=200,
-    #                         validators = [ UniqueValidator( 
-    #                                 queryset=CartItem.objects.all(), 
-    #                                 message="you already added this to cart" ) 
-    #                                 ])
+   
    
     class Meta:
         model = CartItem
-        fields = ['cart','product','product_name','product_price','quantity','item_total']
+        fields = ['cart','product',
+                    'product_name','product_type',
+                    'product_price','quantity','item_total']
         read_only_fields = ['cart','product_available']
 
     
 
-    def get_product_available_for_sale(self,product,*args,**kwargs):
-        cart_item = CartItem.objects.filter(product=product).first()
-        return cart_item.product_available()
+    def get_product_available_for_sale(self,product_variation,*args,**kwargs):
+        return product_variation.quantity_available
+       
         
 
     def create(self,validated_data):
-            cart_item = CartItem.objects.create(**validated_data)
-            return cart_item
+            #check if product in cart before creating
+            if CartItem.objects.filter( cart=validated_data.get('cart'),
+                                        product=validated_data.get('product')
+                                        ).exists():
+                 raise serializers.ValidationError("You already added this item to cart") 
+            else:
+                cart_item = CartItem.objects.create(**validated_data)
+                return cart_item
+
 
     def validate(self,data):
-        product = data.get('product')
-        cart = data
-       
-        if data['quantity'] > self.get_product_available_for_sale(product=product) :
+        product_variation = data.get('product')
+        #product being sent is --> product_variation
+        if data.get('quantity') >  product_variation.quantity_available:
             raise serializers.ValidationError("You've exceeded the amount available for sale") 
         return data
+    
+    
 
 class CartSerializer(DynamicFieldsModelSerializer):
-    cart_items = CartItemSerializer(many=True,fields=['product_name','product_price','quantity','item_total',],read_only=True)
+    cart_items = CartItemSerializer(many=True,fields=[
+                        'product_name','product_type',
+                        'product_price','quantity','item_total',],read_only=True)
    
     class Meta:
         model = Cart

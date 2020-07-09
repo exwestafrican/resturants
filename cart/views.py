@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from django.db.models import Q
+from django.db.models.query import QuerySet
+from django.http.request import QueryDict
 
 from cart.serializers import CartSerializer,CartItemSerializer
 from cart.models import Cart,CartItem
@@ -7,7 +9,7 @@ from cart.mixins import CreateCartMixin
 
 from rest_framework import generics,status
 from rest_framework.response import Response
-from django.db.models.query import QuerySet
+
 
 
 # Create your views here.
@@ -68,30 +70,43 @@ class CartItemList(generics.ListCreateAPIView,CreateCartMixin):
     #         queryset = queryset.all()
     #     return queryset
 
+    def get_or_create_cart(self,request,*args,**kwargs):
+        cart = self.get_cart_queryset()
+        #i can overide the save method. 
+        if len(cart) == 0:
+            cart = self.create_new_cart(request,*args,**kwargs)
+        else:
+            cart = cart.first()
+        return cart
+
 
     def create(self,request,*args,**kwargs):
-        
-      
-        
-       
-        # cart_item = self.model.objects.create(**request.data,cart=cart)
-        
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
         self.perform_create(serializer,request)
+
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         
 
     def perform_create(self,serializer,request,*args,**kwargs):
-        cart = self.get_cart_queryset()
-        if len(cart) == 0:
-            cart = self.create_new_cart(request,*args,**kwargs)
-        else:
-            cart = cart.first()
-            
+        #i can overide the save method. 
+        cart = self.get_or_create_cart(request,*args,**kwargs)
+        
         serializer.save(cart=cart)
 
+
+def append_extra_kwargs_to_request_data(request_data,extra_kwargs):
+    """
+    takes in a dictionary and a Querydict, 
+    appends extra_kwargs to querydict and returns a new query_dict
+    """
+    for key , value in request_data:
+        extra_kwargs[key] = value
+    data = QueryDict(extra_kwargs)
+    print(data)
+    return data
 
 
 

@@ -18,13 +18,13 @@ class CartItemManager(models.Manager):
         to ensure product available is not 
         greater than attempted order.
         """
-        print('field_name',field_name)
+        # print('field_name',field_name)
         cart          = field_name.get('cart')
         quantity      = field_name.get('quantity')
         product       = field_name.get('product')
         
         
-     
+        #use model validators for this
         if quantity > product.quantity_available: raise NotImplementedError #add a better form of error message
         #use define clean ref: 
         # product_price = product.price
@@ -32,6 +32,9 @@ class CartItemManager(models.Manager):
         
         new_cart_item = self.model(**field_name)
         new_cart_item.save()
+        #updates quantity of product available with signal after creating cart item? or do it here? 
+        #post save remove quantity from total product avaialble
+        #post delete add quantity total product available
         return new_cart_item
         
 

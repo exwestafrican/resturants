@@ -44,17 +44,15 @@ class CartItem(models.Model):
         return self.product.product_name
 
     @property
+    def product_type(self):
+        return self.product.type_of_product
+
+    @property
     def product_price(self):
         return self.product.current_price
 
    
-    def product_available(self):
-        return self.product.quantity_available
-
-
-
-
-
+   
 
 class Cart(models.Model):
     """
