@@ -105,7 +105,7 @@ class ProductDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 
-class ProductVariationCreate(generics.CreateAPIView):
+class ProductVariationListCreate(generics.ListCreateAPIView):
     """
     Handles the creation of product variation
     """  
@@ -142,7 +142,8 @@ class ProductVariationDetail(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(instance,read_only_fields=read_only_fields)
         return Response(serializer.data)
 
-      
+
+
 
 class ProductCategoryDetail(generics.RetrieveDestroyAPIView):
     queryset         = Category.objects.all()
