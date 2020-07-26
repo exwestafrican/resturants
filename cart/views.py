@@ -59,16 +59,8 @@ class CartItemList(generics.ListCreateAPIView,CreateCartMixin):
 
     #only show cart items that belong users
     
-    # figure out if user has and active cart
-    # if no cart, create a new cart for user
-    #if get cart queryset is not None, add item to cart, 
-    #esle create cart and add item 
-    # def get_queryset(self):
-    #     queryset = self.get_cart_queryset()
-    #     if isinstance(queryset, QuerySet):
-    #         # Ensure queryset is re-evaluated on each request.
-    #         queryset = queryset.all()
-    #     return queryset
+
+    
 
     def get_or_create_cart(self,request,*args,**kwargs):
         cart = self.get_cart_queryset()
@@ -110,3 +102,13 @@ def append_extra_kwargs_to_request_data(request_data,extra_kwargs):
 
 
 
+ # figure out if user has and active cart
+    # if no cart, create a new cart for user
+    #if get cart queryset is not None, add item to cart, 
+    #esle create cart and add item 
+    # def get_queryset(self):
+    #     queryset = self.get_cart_queryset()
+    #     if isinstance(queryset, QuerySet):
+    #         # Ensure queryset is re-evaluated on each request.
+    #         queryset = queryset.all()
+    #     return queryset

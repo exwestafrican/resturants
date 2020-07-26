@@ -59,7 +59,10 @@ class User(AbstractBaseUser,PermissionsMixin):
         super().clean()
         self.email = self.__class__.objects.normalize_email(self.email)
 
-    
+    def __str__(self):
+        #decided what to call user 
+        name = self.email if self.get_short_name() is None else self.get_short_name()
+        return name
 
     def get_full_name(self):
         """

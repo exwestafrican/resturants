@@ -34,8 +34,10 @@ class CartItemSerializer(DynamicFieldsModelSerializer):
 
     def validate(self,data):
         product_variation = data.get('product')
+       
+ 
         #product being sent is --> product_variation
-        if data.get('quantity') >  product_variation.quantity_available:
+        if data.get('quantity',1) >  product_variation.quantity_available:
             raise serializers.ValidationError("You've exceeded the amount available for sale") 
         return data
     

@@ -42,9 +42,7 @@ class ProductList(APIView):
 
 
     def get(self,request,format=None):
-        self.request.session.set_test_cookie() 
-        #set sessionId so user can add item to cart. 
-        # check if it worked when user tries to add item to cart
+       
         products = Product.objects.all()
         serializer = ProductSerializer(products,many=True,context={'request': request})
         return Response(serializer.data)

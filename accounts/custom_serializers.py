@@ -66,13 +66,12 @@ class DynamicFieldsModelSerializer(serializers.ModelSerializer):
        
        
         if fields is not None:
-            
             allowed     = set(fields)
             exisiting   = set(self.fields)
-            
             for field_name in exisiting-allowed:
                 #remove items from dict like obj
                 self.fields.pop(field_name)
+        
     
         if read_only_fields is not None:
            

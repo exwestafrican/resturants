@@ -20,7 +20,7 @@ class CartItemManager(models.Manager):
         """
         # print('field_name',field_name)
         cart          = field_name.get('cart')
-        quantity      = field_name.get('quantity')
+        quantity      = field_name.get('quantity',1)
         product       = field_name.get('product')
         
         
