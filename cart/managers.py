@@ -23,6 +23,7 @@ class CartItemManager(models.Manager):
         quantity      = field_name.get('quantity',1)
         product       = field_name.get('product')
         
+ 
         
         #use model validators for this
         if quantity > product.quantity_available: raise NotImplementedError #add a better form of error message
