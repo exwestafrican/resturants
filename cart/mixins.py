@@ -213,7 +213,7 @@ class CreateCartMixin:
             self.request.session["cart_id"] = cart.cart_id
             # self.request.session["user_id"] = self.request.user.id
 
-            return None
+            return cart
 
         else:
             # need to throw an error message here
