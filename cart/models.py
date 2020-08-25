@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model, settings
 from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 from django.db.models.signals import pre_save
+from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 
 from products.models import ProductVariation
 from products.utils import random_generator
@@ -31,10 +32,23 @@ class CartItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     # owner       = models.ForeignKey(User,on_delete=models.CASCADE,blank=True)  #not required ?
     created = models.DateTimeField(auto_now_add=True)
-
+    anonymous_cart_id = models.CharField(max_length=200, blank=True, null=True)
     objects = CartItemManager()
 
-    # unique together cart and product
+    class Meta:
+        # unique together cart and product
+        unique_together = ["cart", "product"]
+
+    def clean(self):
+        # check to see if quantity available is less than order
+        if self.quantity > self.product.quantity_available:
+            raise ValidationError(
+                {"quantity": _("Order exceeds amount available for sale")}
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.quantity} units of {self.product}"
@@ -71,6 +85,7 @@ class Cart(models.Model):
     cart_status = models.CharField(
         max_length=200, default="shopping", choices=CART_STATUS
     )
+
     # updated
 
     objects = CartManager()

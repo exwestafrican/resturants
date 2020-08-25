@@ -7,37 +7,38 @@ from products.models import ProductVariation
 
 
 class CartItemSerializer(DynamicFieldsModelSerializer):
-    
-
     class Meta:
         model = CartItem
         fields = [
-            "cart",
             "product",
             "product_name",
             "product_type",
             "product_price",
             "quantity",
             "item_total",
+            "anonymous_cart_id",
         ]
-        read_only_fields = ["cart", "product_available"]
+        read_only_fields = ["product_available"]
 
     def get_product_available_for_sale(self, product_variation, *args, **kwargs):
         return product_variation.quantity_available
 
     def create(self, validated_data):
-        # check if product in cart before creating
-        if CartItem.objects.filter( cart=validated_data.get('cart'),
-                                    product=validated_data.get('product')
-                                    ).exists():
-             raise serializers.ValidationError("You already added this item to cart")
-        else:
-            cart_item = CartItem.objects.create(**validated_data)
-            return cart_item
+        # check if anonymous id is valid
+        cart = Cart.objects.filter(cart_id=validated_data.get("anonymous_cart_id"))
+        if not cart.exists():
+            raise serializers.ValidationError("invalid anonymous cart ID")
+        cart = cart.first()
+        if not cart.active:
+            raise serializers.ValidationError(
+                "anonymous cart ID is not active,please create a new one"
+            )
+        # check that cart item is on front end unique.
+        cart_item = CartItem.objects.create(cart=cart, **validated_data)
+        return cart_item
 
     def validate(self, data):
         product_variation = data.get("product")
-       
 
         # product being sent is --> product_variation
         if data.get("quantity", 1) > product_variation.quantity_available:

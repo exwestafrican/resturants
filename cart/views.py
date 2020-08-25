@@ -14,23 +14,29 @@ from rest_framework.response import Response
 # Create your views here.
 
 
-class CartList(generics.ListAPIView, CreateCartMixin):
+class CartList(generics.ListAPIView):
     serializer_class = CartSerializer
 
     def get_queryset(self):
-        queryset = self.get_cart_queryset()
-        if isinstance(queryset, QuerySet):
-            # Ensure queryset is re-evaluated on each request.
-            queryset = queryset.all()
-        return queryset
+        # if user is authenticated and no anonymous id is provided
+        anonymous_cart_id = self.request.query_params.get("anonymous_cart_id", None)
+        if self.request.user.is_authenticated and anonymous_cart_id is None:
+            cart = Cart.objects.get_users_cart(user=self.request.user)
+        elif anonymous_cart_id:
+            cart = Cart.objects.get_anonymous_cart(anonymous_cart_id)
+        else:
+            cart = 0
+
+        return cart
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_cart_queryset())
-
+        queryset = self.filter_queryset(self.get_queryset())
         if len(queryset) == 0:
-            # users might have zero active cart. anon user might have no cart:None
             return Response(
-                data={"message": "You currently have no active cart, please create one"}
+                data={
+                    "message": "please supply an anonymous cart id or autheticated user with a valid cart"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         page = self.paginate_queryset(queryset)
@@ -42,46 +48,31 @@ class CartList(generics.ListAPIView, CreateCartMixin):
         return Response(serializer.data)
 
 
-# if cart_id in session_id use that to add item to cart
-# else create new cart
+class CreateEmptyCart(generics.CreateAPIView):
+    serializer_class = CartSerializer
 
 
-class CartItemList(generics.ListCreateAPIView, CreateCartMixin):
+class AddItemsToCart(generics.CreateAPIView):
     serializer_class = CartItemSerializer
     queryset = CartItem.objects.all()
-    model = CartItem
-
-    # only show cart items that belong users
-
-    def get_or_create_cart(self, request, *args, **kwargs):
-        cart = self.get_cart_queryset()
-        # i can overide the save method.
-        if len(cart) == 0:
-            cart = self.create_new_cart(request, *args, **kwargs)
-        else:
-            cart = cart.first()
-        return cart
 
     def create(self, request, *args, **kwargs):
+        """
+        requires user to pass in anonymous_cart_id gotten from create empty cart.
+        anonymout_cart_id must be a valid cart_id
+        user requiered to pass in product and quantity 
+        """
         serializer = self.get_serializer(data=request.data)
-
         serializer.is_valid(raise_exception=True)
-        cart = self.get_or_create_cart(request, *args, **kwargs)
-        if cart is not None:
-            serializer.save(cart=cart)
-            headers = self.get_success_headers(serializer.data)
-            return Response(
-                serializer.data, status=status.HTTP_201_CREATED, headers=headers
-            )
+        if request.user.is_authenticated:
+            serializer.save(owner=request.user)
         else:
-            # if i can't activate cookies on browser throw this error
-            # create new error messsage
-            serializer.error_messages[
-                "cookie_error"
-            ] = "You need to enable cookies on this browser or Autheticate yourself to create or add item to a cart"
+            serializer.save()
+        headers = self.get_success_headers(serializer.data)
         return Response(
-            serializer.error_messages.get("cookie_error"),
-            status=status.HTTP_400_BAD_REQUEST,
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
 
-#cart item detail
+
+# cart item detail
+

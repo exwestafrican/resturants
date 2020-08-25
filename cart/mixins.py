@@ -7,6 +7,7 @@ from rest_framework.settings import api_settings
 
 from django.shortcuts import render
 from django.db.models import Q
+from django.http import HttpResponse
 
 
 class CreateCartMixin:
@@ -69,41 +70,52 @@ class CreateCartMixin:
         if self.request.session.test_cookie_worked():
             self.request.session.delete_test_cookie()  # good practise to delete test cookies
             # if i'm here, it means user accepts cookies, create session for user.
-            self.request.session.create()
+            self.request.session.save()
             return True
         else:
             return False
 
-    def create_new_cart(self, request, *args, **kwargs):
+    def get_or_create_cart(self, request, *args, **kwargs):
         """
         decdies how to create a cart.
         """
+
         data = {}
         data["csrfmiddlewaretoken"] = request.data.get("csrfmiddlewaretoken")
         # cart doesn't need any data to get created but csrf is important for security.
         serializer = self.cart_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-
+        response = HttpResponse("Visiting for the first time.")
+        response.set_cookie(
+            key="_cart", value="trwsx",
+        )
         if request.user.is_authenticated:
+            print("perform create for auth")
             content = self.perform_create_for_authenticated_user(serializer)
         # check if user has session
         elif request.session.session_key:
-
+            print("perform create for anon user")
             content = self.perform_create_for_anonymous_user_with_session_id(serializer)
         # then just create a session id for user
         else:
+
+            print(
+                "perform create for anon user without session id",
+                request.session.session_key,
+                request.session.get("_cart"),
+            )
             content = self.perform_create_for_anonymous_user_without_session_id(
                 serializer
             )
-        print("content", content)
+
         return content
 
     def perform_create_for_authenticated_user(self, serializer):
         """
-        checks if autheticated user doesn't have an anonymous active cart
-        creates cart for autenticated user
-        sets session_id or sets to None 
-        saves cart_ID in session_id 
+        check if user's session has an active cart and if session belongs to request user
+        check if user has active cart. user might have a cart but not have a new session created
+        check if user's session has an active cart, and session belongs to no one.assing cart session to request user
+        else just create a cart for user and assign user_id to session_id
         """
 
         # check if user's session has an active cart
@@ -117,18 +129,11 @@ class CreateCartMixin:
             cart = Cart.objects.filter(
                 session_id=self.request.session.session_key, active=True
             ).first()
-            # assign cart to user
-            cart.owner = self.request.user
-            cart.save()
-            # serializer = self.get_serializer(cart)
-
-            self.request.session["cart_id"] = cart.cart_id
-            self.request.session["user_id"] = self.request.user.id
-            # assign cart to owner and return cart
+            # user owns cart.
 
             return cart
 
-        # check if user has active cart. user might have a cart but have a new session created
+        # check if user has active cart. user might have a cart but not have a new session created
         if Cart.objects.filter(owner=self.request.user, active=True).exists():
             cart = Cart.objects.filter(owner=self.request.user, active=True).first()
 
@@ -171,11 +176,12 @@ class CreateCartMixin:
     def perform_create_for_anonymous_user_with_session_id(self, serializer):
         """
         checks if anon user doesn't have an active cart in session
-        creates cart for anon user.
+        else creates cart for anon user.
         """
 
         # this user might have a cart
 
+        print(self.request.session.session_key)
         # check if anon user has an active cart i.e user is still shooping
         if Cart.objects.filter(
             session_id=self.request.session.session_key, active=True
@@ -207,6 +213,7 @@ class CreateCartMixin:
             # serializer.save(session_id=self.request.session.session_key)
 
             # create cart with session_id
+
             cart = Cart.objects.create(session_id=self.request.session.session_key)
 
             # store cart_id in session_id
