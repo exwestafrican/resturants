@@ -14,8 +14,7 @@ from django.utils.translation import ugettext_lazy as _
 from accounts.managers import UserManager
 
 
-
-class User(AbstractBaseUser,PermissionsMixin):
+class User(AbstractBaseUser, PermissionsMixin):
     """
     User class inherits from the abstractbaseUser class 
     implementing a fully featured User model with dmin-compliant 
@@ -23,53 +22,59 @@ class User(AbstractBaseUser,PermissionsMixin):
     Email and password are required. Other fields are optional.
     password and password behaviour inherted from AbstractBaseUser
     """
-    phone_number  =  PhoneNumberField(
-                        unique=True,
-                        help_text='phone numbers need to come with extentions, e.g +23481690....',
-                        blank=True,null=True)
 
-    email         = models.EmailField(unique=True, max_length=200)
-    first_name    = models.CharField(max_length=30, blank=True,null=True)
-    last_name     = models.CharField(max_length=30, blank=True, null=True)
-    date_joined   = models.DateTimeField(auto_now_add=True)
-    is_staff      = models.BooleanField(
-                       'staff status',
-                        default=False,
-                        help_text='Designates whether the user can log into this admin site.',)
+    phone_number = PhoneNumberField(
+        unique=True,
+        help_text="phone numbers need to come with extentions, e.g +23481690....",
+        blank=True,
+        null=True,
+    )
 
-    is_active     = models.BooleanField(
-                        'active',
-                        default=True,
-                        help_text='Designates whether this user should be treated as active. '
-                                   'Unselect this instead of deleting accounts.',)
+    email = models.EmailField(unique=True, max_length=200)
+    first_name = models.CharField(max_length=30, blank=True, null=True)
+    last_name = models.CharField(max_length=30, blank=True, null=True)
+    date_joined = models.DateTimeField(auto_now_add=True)
+    is_staff = models.BooleanField(
+        "staff status",
+        default=False,
+        help_text="Designates whether the user can log into this admin site.",
+    )
 
-    avatar         = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    is_active = models.BooleanField(
+        "active",
+        default=True,
+        help_text="Designates whether this user should be treated as active. "
+        "Unselect this instead of deleting accounts.",
+    )
 
-    USERNAME_FIELD = 'email'
-    EMAIL_FIELD = 'email'
-    REQUIRED_FIELDS = ['phone_number']
+    avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
+
+    USERNAME_FIELD = "email"
+    EMAIL_FIELD = "email"
+    REQUIRED_FIELDS = ["phone_number"]
 
     objects = UserManager()
 
     class Meta:
-        verbose_name = _('user')
-        verbose_name_plural = _('users')
+        verbose_name = _("user")
+        verbose_name_plural = _("users")
 
     def clean(self):
         super().clean()
         self.email = self.__class__.objects.normalize_email(self.email)
 
     def __str__(self):
-        #decided what to call user 
-        name = self.email if self.get_short_name() is None else self.get_short_name()
+        # decided what to call user
+
+        name = self.email if self.get_short_name() == "" else self.get_short_name()
         return name
 
     def get_full_name(self):
         """
         Return the first_name plus the last_name, with a space in between.
         """
-        full_name = '{} {}'.format(self.first_name, self.last_name)
-        return full_name.strip() #removes leading and trailing whitespace
+        full_name = "{} {}".format(self.first_name, self.last_name)
+        return full_name.strip()  # removes leading and trailing whitespace
 
     def get_short_name(self):
         """Return the short name for the user."""
@@ -79,10 +84,10 @@ class User(AbstractBaseUser,PermissionsMixin):
         """Send an email to this user."""
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
-
     @property
     def user_id(self):
         return id
+
 
 class UserInfo(models.Model):
     pass
