@@ -10,6 +10,7 @@ from products.utils import random_generator
 
 from cart.managers import CartItemManager, CartManager
 from django.db.models.signals import pre_save, post_save
+from django.db.models import Sum
 
 # Create your models here.
 
@@ -119,3 +120,13 @@ def auto_generate_unique_field_id(sender, instance, created, *args, **kwargs):
 
 post_save.connect(auto_generate_unique_field_id, sender=Cart)
 
+
+def update_cart_total(sender, instance, created, *args, **kwargs):
+    if created:
+        # fetches cart associated to cart item and updates its total
+        cart = instance.cart
+        cart.total += instance.item_total
+        instance.save()
+
+
+post_save.connect(update_cart_total, sender=CartItem)
