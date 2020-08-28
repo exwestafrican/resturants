@@ -27,3 +27,12 @@ user = get_user_model().objects.first()
 product = ProductVariation.objects.first()
 cart = Cart.objects.create(owner=user)
 add_item_to_cart = CartItem.objects.create(cart=cart,product=product,quantity=2)
+
+
+
+
+from cart.models import Cart,CartItem
+cart = Cart.objects.get(cart_id="crc8r399")
+cart.cart_items.all()
+a=[ item.item_total for item in cart.cart_items.all()]
+sum(a)

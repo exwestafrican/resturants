@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.http.request import QueryDict
+from django.core.exceptions import ValidationError
 
 from cart.serializers import CartSerializer, CartItemSerializer
 from cart.models import Cart, CartItem
@@ -21,11 +22,13 @@ class CartList(generics.ListAPIView):
         # if user is authenticated and no anonymous id is provided
         anonymous_cart_id = self.request.query_params.get("anonymous_cart_id", None)
         if self.request.user.is_authenticated and anonymous_cart_id is None:
+            print("here")
             cart = Cart.objects.get_users_cart(user=self.request.user)
         elif anonymous_cart_id:
+            print("there")
             cart = Cart.objects.get_anonymous_cart(anonymous_cart_id)
         else:
-            cart = 0
+            cart = []
 
         return cart
 
@@ -51,6 +54,33 @@ class CartList(generics.ListAPIView):
 class CreateEmptyCart(generics.CreateAPIView):
     serializer_class = CartSerializer
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if self.request.user.is_authenticated:
+            # if user is authenticated, and doesn't have an active cart, create one
+            if Cart.objects.get_users_cart(user=self.request.user) == []:
+                serializer.save(owner=self.request.user)
+            return Response(
+                {"message": "You already have an active cart"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+            # raise ValidationError("You already have an active cart")
+        else:
+            # else create an anonymous cart
+            serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
+
+
+class EditDestroyCartItem(generics.RetrieveUpdateDestroyAPIView):
+    queryset = CartItem.objects.all()
+    serializer_class = CartItemSerializer
+    # permission_classes = [IsAdminOrReadOnly]
+
 
 class AddItemsToCart(generics.CreateAPIView):
     serializer_class = CartItemSerializer
@@ -64,10 +94,7 @@ class AddItemsToCart(generics.CreateAPIView):
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if request.user.is_authenticated:
-            serializer.save(owner=request.user)
-        else:
-            serializer.save()
+        serializer.save()
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers

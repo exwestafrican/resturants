@@ -7,6 +7,8 @@ from products.models import ProductVariation
 
 
 class CartItemSerializer(DynamicFieldsModelSerializer):
+    url = serializers.SerializerMethodField()
+
     class Meta:
         model = CartItem
         fields = [
@@ -16,6 +18,7 @@ class CartItemSerializer(DynamicFieldsModelSerializer):
             "product_price",
             "quantity",
             "item_total",
+            "url",
             "anonymous_cart_id",
         ]
         read_only_fields = ["product_available"]
@@ -33,9 +36,12 @@ class CartItemSerializer(DynamicFieldsModelSerializer):
             raise serializers.ValidationError(
                 "anonymous cart ID is not active,please create a new one"
             )
+        if CartItem.objects.filter(
+            cart=cart, product=validated_data.get("product")
+        ).exists():
+            raise serializers.ValidationError("you already added this to cart")
         # check that cart item is on front end unique.
-        cart_item = CartItem.objects.create(cart=cart, **validated_data)
-        return cart_item
+        return CartItem.objects.create(cart=cart, **validated_data)
 
     def validate(self, data):
         product_variation = data.get("product")
@@ -57,6 +63,7 @@ class CartSerializer(DynamicFieldsModelSerializer):
             "product_price",
             "quantity",
             "item_total",
+            "url",
         ],
         read_only=True,
     )

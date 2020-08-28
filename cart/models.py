@@ -1,16 +1,18 @@
-from django.db import models
+# django dependences
 from django.contrib.auth import get_user_model, settings
+from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
+from django.db import models
+from django.db.models.signals import pre_save, post_save, post_delete, m2m_changed
+from django.shortcuts import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
-from django.db.models.signals import pre_save
-from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 
+# relative
 from products.models import ProductVariation
 from products.utils import random_generator
 
 from cart.managers import CartItemManager, CartManager
-from django.db.models.signals import pre_save, post_save
-from django.db.models import Sum
+
 
 # Create your models here.
 
@@ -70,6 +72,40 @@ class CartItem(models.Model):
     def product_price(self):
         return self.product.current_price
 
+    def update_cart_total(self):
+        cart = self.cart
+        # cart.cart_items.all() returns a query set of all items in cart.
+        item_total = [item.item_total for item in cart.cart_items.all()]
+        cart.total = sum(item_total)
+        cart.save()
+
+    @property
+    def get_cart_id(self):
+        return self.cart.cart_id
+
+    def get_absolute_url(self):
+        """
+        returns an absolute url path to product
+        """
+        return reverse("cart-item-detail", kwargs={"pk": self.pk})
+
+
+def add_to_cart_total(sender, instance, created, *args, **kwargs):
+    new_cart_total = instance.update_cart_total()
+    if created or instance.cart.total != new_cart_total:
+        # if new item was created or exiting item was edited,
+        # cart was already updated
+        # this is done to avoide recalling an update and also avoids infinite loops
+        return new_cart_total
+
+
+def subtract_from_cart_total(sender, instance, *args, **kwargs):
+    instance.update_cart_total()
+
+
+post_save.connect(add_to_cart_total, sender=CartItem)
+post_delete.connect(subtract_from_cart_total, sender=CartItem)
+
 
 class Cart(models.Model):
     """
@@ -100,10 +136,7 @@ class Cart(models.Model):
     def is_cart_anonymous(self):
         return bool(self.owner)
 
-    # cart is active if it user hasn't paid or cancelled
-    # def update_cart_status(self):
-    #     self.bought = True
-    #     return self.bought
+    # define a method tu update cart starus
 
     # use a many to many signal to handle order toal
 
@@ -121,12 +154,4 @@ def auto_generate_unique_field_id(sender, instance, created, *args, **kwargs):
 post_save.connect(auto_generate_unique_field_id, sender=Cart)
 
 
-def update_cart_total(sender, instance, created, *args, **kwargs):
-    if created:
-        # fetches cart associated to cart item and updates its total
-        cart = instance.cart
-        cart.total += instance.item_total
-        instance.save()
-
-
-post_save.connect(update_cart_total, sender=CartItem)
+# add signal for if an item is removed from cart
